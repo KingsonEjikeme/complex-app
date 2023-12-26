@@ -5,27 +5,39 @@ let User = function (data) {
   this.errors = [];
 };
 
-User.prototype.register = function (req, res) {
-  console.log("nice: ", usersCollection);
+User.prototype.register = async function (callback) {
+  const existingUser = await usersCollection.findOne({
+    username: this.data.username,
+  });
 
-    usersCollection.findOne({
-      username: this.data.username,
-    }).then((response)=>{
-        console.log("creation: ", response);
-        if(!response){
-            usersCollection.insertOne(this.data);
-            res.status(200).json({
-                message: "Account creation successful"
-            });
-        }else{
-            res.status(400).json({
-                message: "Account already exists"
-            });
-        }
-    }).catch((err)=>{
-        console.log("creation error: ", err);
-    })
-  
+  if (!existingUser) {
+    usersCollection.insertOne(this.data);
+    callback({
+      status: 200,
+      data: {
+        message: "Account creation successful",
+      },
+    });
+  } else {
+    callback({
+      status: 400,
+      data: {
+        message: "Account already exists",
+      },
+    });
+  }
+};
+
+User.prototype.login = async function (callback) {
+  const attemptedUser = await usersCollection.findOne({
+    username: this.data.username,
+  });
+
+  if (attemptedUser && attemptedUser.password === this.data.password) {
+    callback({ status: 200, data: { message: "Login Successful" } });
+  } else {
+    callback({ status: 400, data: { message: "Incorrect Password" } });
+  }
 };
 
 module.exports = User;
